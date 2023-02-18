@@ -36,7 +36,7 @@ getInput:
 
     cmp al, 1
     jne .next1
-    sub di,di
+    sub di,di ; start with offset 0
     mov si, msg_test1
     call OUTPUT_TEXT
     call TEST1
@@ -44,7 +44,7 @@ getInput:
 
     cmp al, 2
     jne .next9
-    mov di,1 ; start
+    mov di,1 ; start with offset 1
     mov si, msg_test2
     call OUTPUT_TEXT
     call TEST1
@@ -67,6 +67,7 @@ TEST1:
     call OUTPUT_TEXT
     mov BYTE [cnt_error], 0
     mov BYTE [sig_abort], 0
+    mov BYTE [tst_byte], 0
 
     push bx
     push es
@@ -81,7 +82,9 @@ TEST1:
     ; init start segment
     mov bx,RAMEXT_START
     mov es,bx
+    mov ah,BYTE [tst_byte] ; init compare value for test
 .loop_test1:
+    mov al,BYTE [tst_byte] ; init value for test
     mov es:[di],al
     mov al,es:[di]
     xor al,ah   ; Zero flag set, when equal
@@ -281,5 +284,11 @@ cnt_error:
 
 sig_abort:
     db 0 ; declare abort condition for tests
+
+tst_byte:
+    db 0 ; current test value as byte
+
+ts_word:
+    dw 0 ; current test value as word
 
 fullprog_end
