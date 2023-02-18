@@ -36,8 +36,21 @@ getInput:
 
     cmp al, 1
     jne .next1
+    sub di,di
+    mov si, msg_test1
+    call OUTPUT_TEXT
     call TEST1
 .next1:
+
+    cmp al, 2
+    jne .next9
+    mov di,1 ; start
+    mov si, msg_test2
+    call OUTPUT_TEXT
+    call TEST1
+.next2:
+
+.next9:
     jmp START
 
 QUIT:
@@ -48,9 +61,8 @@ QUIT:
     ret
 
 ; TEST SEGMENT 4xxxx with even numbers
+; set di to start offset
 TEST1:
-    mov si, msg_test1
-    call OUTPUT_TEXT
     mov si, msg_test1_1
     call OUTPUT_TEXT
     mov BYTE [cnt_error], 0
@@ -58,17 +70,16 @@ TEST1:
 
     push bx
     push es
-    ; push ds
+    push di
     cld
 
     ; init offset/data
-    sub di,di
+    ; sub di,di
     sub ax,ax
     mov cx,LOOPSIZE
     mov dl,8
     ; init start segment
     mov bx,RAMEXT_START
-    ; mov ds,bx
     mov es,bx
 .loop_test1:
     mov es:[di],al
@@ -76,35 +87,35 @@ TEST1:
     xor al,ah   ; Zero flag set, when equal
     jz .OK1     ; zero, so value is equal
     ; ERROR CONDITION HERE
-    ; pop ds
     call PRINT_ERRADDR
     call ERRORCNT_WAIT ; press "q" for abort
     cmp BYTE [sig_abort], 1
-    ; push ds
-    ; mov ds,bx
     jz .loop0_end ; abort requested
 .OK1:
     inc di
     inc di ; inc by 2
     mov ax, 0
     loop .loop_test1
-    ; pop ds
+    
+    ; print current test offset
+    sub di,2
     call OUTPUT_HEX_DIGIT
     call OUTPUT_CR
-    ; push ds
-    ; mov ds,bx
-    ; call PRINT_ADDR
+    add di,2
+
+    ; decrease outer loop counter
     dec dl
-    jz .loop0_end
+    jz .loop0_end ; exit when done
     mov cx, LOOPSIZE
-    jmp .loop_test1
+    jmp .loop_test1 ; another round
 .loop0_end:
-    ; pop ds
+    pop di
     pop es
     pop bx
     call OUTPUT_CRLF
     call OUTPUT_CRLF
     ret
+
 
 ERRORCNT_WAIT:
     ; push bx
@@ -246,6 +257,9 @@ msg:
 
 msg_test1:
     db 'Starte test1...', 13, 10, 0
+
+msg_test2:
+    db 'Starte test2...', 13, 10, 0
 
 msg_test1_1:
     db 'TEST 00...', 13, 10, 0
