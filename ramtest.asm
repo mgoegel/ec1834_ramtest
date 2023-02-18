@@ -87,7 +87,9 @@ TEST1:
     mov al,BYTE [tst_byte] ; init value for test
     mov es:[di],al
     mov al,es:[di]
+    push ax
     xor al,ah   ; Zero flag set, when equal
+    pop ax
     jz .OK1     ; zero, so value is equal
     ; ERROR CONDITION HERE
     call PRINT_ERRADDR
@@ -102,7 +104,7 @@ TEST1:
     
     ; print current test offset
     sub di,2
-    call OUTPUT_HEX_DIGIT
+    call OUTPUT_HEX_DIGIT4
     call OUTPUT_CR
     add di,2
 
@@ -121,24 +123,12 @@ TEST1:
 
 
 ERRORCNT_WAIT:
-    ; push bx
-    ; push dx
-    ; push ax
     inc BYTE[cnt_error]
-    ; sub ax,ax
-    ; mov al, BYTE[cnt_error]
-    ; xor dx,dx
-    ; mov bl, 11 ; div al / 11 - wait every 10 error for key
-    ; div bl
-    ; cmp dl, 10
     cmp BYTE[cnt_error], 10
     jnz .no_wait_t0
     mov BYTE[cnt_error], 0
     call WAIT_CHR
 .no_wait_t0:
-    ; pop ax
-    ; pop dx
-    ; pop bx
     ret
 
 PRINT_ADDR:
@@ -149,21 +139,72 @@ PRINT_ADDR:
     ret
     
 PRINT_ERRADDR:
-    call OUTPUT_HEX_DIGIT ; ouput current di value
+    push ax
+    call OUTPUT_HEX_DIGIT4 ; ouput current di value
+    mov al, 0x20
+    call OUTPUT_CHR
+    pop ax
+    push ax
+    call OUTPUT_HEX_DIGIT2 ; output current al value
     mov al, 0x20
     call OUTPUT_CHR
 
     mov si, msg_ERROR
     call OUTPUT_TEXT
+    pop ax
     ret
 
 
-OUTPUT_HEX_DIGIT:
+OUTPUT_HEX_DIGIT4:
     ; display a 4 digit hex value from DI register
     push ax
 
-    mov ax,di
-    mov al,ah
+    mov ax, di
+    mov al, ah
+    call OUTPUT_HEX_DIGIT2
+    mov ax, di
+    call OUTPUT_HEX_DIGIT2
+
+;     mov ax,di
+;     mov al,ah
+;     shr al,4
+;     cmp al,0xa
+;     jl .n1_letter
+;     add al, 7
+; .n1_letter:
+;     add al, '0'
+;     call OUTPUT_CHR
+;     mov ax,di
+;     mov al,ah
+;     and al,0xf
+;     cmp al,0xa
+;     jl .n2_letter
+;     add al, 7
+; .n2_letter:
+;     add al, '0'
+;     call OUTPUT_CHR
+;     mov ax,di
+;     shr al,4
+;     cmp al,0xa
+;     jl .n3_letter
+;     add al, 7
+; .n3_letter:
+;     add al, '0'
+;     call OUTPUT_CHR
+;     mov ax,di
+;     and al,0xf
+;     cmp al,0xa
+;     jl .n4_letter
+;     add al, 7
+; .n4_letter:
+;     add al, '0'
+;     call OUTPUT_CHR
+    pop ax
+    ret
+
+OUTPUT_HEX_DIGIT2:
+    ; display a 2 digit hex value from AL register
+    push ax
     shr al,4
     cmp al,0xa
     jl .n1_letter
@@ -171,29 +212,13 @@ OUTPUT_HEX_DIGIT:
 .n1_letter:
     add al, '0'
     call OUTPUT_CHR
-    mov ax,di
-    mov al,ah
+    pop ax
+    push ax
     and al,0xf
     cmp al,0xa
     jl .n2_letter
     add al, 7
 .n2_letter:
-    add al, '0'
-    call OUTPUT_CHR
-    mov ax,di
-    shr al,4
-    cmp al,0xa
-    jl .n3_letter
-    add al, 7
-.n3_letter:
-    add al, '0'
-    call OUTPUT_CHR
-    mov ax,di
-    and al,0xf
-    cmp al,0xa
-    jl .n4_letter
-    add al, 7
-.n4_letter:
     add al, '0'
     call OUTPUT_CHR
     pop ax
