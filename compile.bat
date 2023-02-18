@@ -1,0 +1,1 @@
+nasm -f bin -o ramtest.exe ramtest.asm
