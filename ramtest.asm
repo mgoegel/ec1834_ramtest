@@ -8,7 +8,7 @@
 ;
 ; $ nasm -f bin -o hedosexe.exe hedosexe.nasm
 ;
-
+USE16
 %include "fullprog_dosexe.inc.nasm"
 
 RAMEXT_START EQU 4000h
@@ -275,7 +275,7 @@ WAIT_CHR:
 fullprog_data  ; This is mandatory for .exe.
 
 msg: 
-    db "RAMTEST fÅr EC1834 (c)2023 Mario Goegel", 13, 10
+    db "RAMTEST f?r EC1834 (c)2023 Mario Goegel", 13, 10
     db 13, 10
     db '1 - Teste gerade Adressen in 4xxxxh', 13, 10
     db '2 - Teste ungerade Adressen in 4xxxxh', 13, 10
