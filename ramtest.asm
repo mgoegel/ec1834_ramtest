@@ -36,15 +36,18 @@ getInput:
 
     cmp al, 1
     jne .next1
-    sub di,di ; start with offset 0
+    sub di,di ; start with offset fffe
+    dec di
+    dec di
     mov si, msg_test1
     call OUTPUT_TEXT
     call TEST1
 .next1:
 
     cmp al, 2
-    jne .next9
-    mov di,1 ; start with offset 1
+    jne .next2
+    sub di,di ; start with offset ffff
+    dec di
     mov si, msg_test2
     call OUTPUT_TEXT
     call TEST1
@@ -72,17 +75,24 @@ TEST1:
     push bx
     push es
     push di
-    cld
+    ;cld
 
     ; init offset/data
     ; sub di,di
     sub ax,ax
     mov cx,LOOPSIZE
     mov dl,8
+
+    ; Disable NMI (Parity error)
+    mov al,0
+    out 0xa0, al
+    mov ah,BYTE [tst_byte] ; init compare value for test
+    mov al,BYTE [tst_byte] ; init value for test
+    ;call OUTPUT_HEX_DIGIT4
+    ;call OUTPUT_CR
     ; init start segment
     mov bx,RAMEXT_START
     mov es,bx
-    mov ah,BYTE [tst_byte] ; init compare value for test
 .loop_test1:
     mov al,BYTE [tst_byte] ; init value for test
     mov es:[di],al
@@ -92,21 +102,21 @@ TEST1:
     pop ax
     jz .OK1     ; zero, so value is equal
     ; ERROR CONDITION HERE
-    call PRINT_ERRADDR
-    call ERRORCNT_WAIT ; press "q" for abort
+    ;call PRINT_ERRADDR
+    ;call ERRORCNT_WAIT ; press "q" for abort
     cmp BYTE [sig_abort], 1
     jz .loop0_end ; abort requested
 .OK1:
-    inc di
-    inc di ; inc by 2
+    dec di
+    dec di ; inc by 2
     mov ax, 0
     loop .loop_test1
     
     ; print current test offset
-    sub di,2
-    call OUTPUT_HEX_DIGIT4
-    call OUTPUT_CR
     add di,2
+    ;call OUTPUT_HEX_DIGIT4
+    ;call OUTPUT_CR
+    sub di,2
 
     ; decrease outer loop counter
     dec dl
@@ -114,9 +124,13 @@ TEST1:
     mov cx, LOOPSIZE
     jmp .loop_test1 ; another round
 .loop0_end:
+    mov al, 0x80
+    out 0xa0, al
     pop di
     pop es
     pop bx
+    mov di, msg_test1_3
+    call OUTPUT_TEXT
     call OUTPUT_CRLF
     call OUTPUT_CRLF
     ret
@@ -157,6 +171,7 @@ PRINT_ERRADDR:
 
 OUTPUT_HEX_DIGIT4:
     ; display a 4 digit hex value from DI register
+    pushf
     push ax
 
     mov ax, di
@@ -200,10 +215,12 @@ OUTPUT_HEX_DIGIT4:
 ;     add al, '0'
 ;     call OUTPUT_CHR
     pop ax
+    popf
     ret
 
 OUTPUT_HEX_DIGIT2:
     ; display a 2 digit hex value from AL register
+    pushf
     push ax
     shr al,4
     cmp al,0xa
@@ -222,6 +239,7 @@ OUTPUT_HEX_DIGIT2:
     add al, '0'
     call OUTPUT_CHR
     pop ax
+    popf
     ret
 
 OUTPUT_CRLF:
@@ -246,7 +264,8 @@ OUTPUT_CHR:
     ret
 
 OUTPUT_TEXT:
-; expect SI with text to output
+    ; expect SI with text to output
+    pushf
     push ax
 .loop_text:
     mov ah,0x0e ; 0x0e means 'Write Character in TTY mode'
@@ -257,9 +276,11 @@ OUTPUT_TEXT:
     jmp .loop_text
 .done:
     pop ax
+    popf
     ret
 
 WAIT_CHR:
+    pushf
     push ax
     mov al, '.'
     call OUTPUT_CHR
@@ -270,12 +291,13 @@ WAIT_CHR:
     mov BYTE [sig_abort], 1
 .no_abort:
     pop ax
+    popf
     ret
 
 fullprog_data  ; This is mandatory for .exe.
 
 msg: 
-    db "RAMTEST f?r EC1834 (c)2023 Mario Goegel", 13, 10
+    db "RAMTEST fÅr EC1834 (c)2023 Mario Goegel", 13, 10
     db 13, 10
     db '1 - Teste gerade Adressen in 4xxxxh', 13, 10
     db '2 - Teste ungerade Adressen in 4xxxxh', 13, 10
@@ -294,6 +316,9 @@ msg_test1_1:
 
 msg_test1_2:
     db 'TEST FF...', 13, 10, 0
+
+msg_test1_3:
+    db 'test1 beendet...', 13, 10, 0
 
 msg_bye:
     db 'Bye bye...', 13, 10, 0
